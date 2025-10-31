@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#B8D4E3">
+    <title>Семейный бюджет Янцен</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- ГЛАВНАЯ -->
+        <div id="screen-home" class="screen active">
+            <div class="header"><h1>💰 Семейный бюджет Янцен</h1><div id="syncStatus" class="sync-status">✅ Онлайн</div></div>
+            <div class="month-selector">
+                <button class="month-btn" onclick="prevMonth()">←</button>
+                <span id="currentMonthName">Ноябрь 2025</span>
+                <button class="month-btn" onclick="nextMonth()">→</button>
+                <button class="month-btn" onclick="openAddMonthModal()">+</button>
+            </div>
+            <div class="balance-card">
+                <div class="balance-item"><div class="balance-label">Доход</div><div class="balance-value" id="totalIncome">0 ₽</div></div>
+                <div class="balance-item"><div class="balance-label">Расходы</div><div class="balance-value" id="totalExpense">0 ₽</div></div>
+                <div class="balance-item"><div class="balance-label">Баланс</div><div class="balance-value" id="totalBalance">0 ₽</div></div>
+            </div>
+            <div class="chart-container"><canvas id="expenseChart"></canvas><div id="chartPlaceholder">Нет данных</div></div>
+            <div class="recent-transactions"><h3>Последние</h3><div id="recentList"></div></div>
+            <button class="fab" onclick="openAddModal('expense')">➕ Расход</button>
+            <button class="fab fab-income" onclick="openAddModal('income')">💵 Доход</button>
+        </div>
+
+        <!-- РАСХОДЫ -->
+        <div id="screen-expenses" class="screen">
+            <div class="header"><h1>📊 Расходы</h1><div id="syncStatus2" class="sync-status">✅ Онлайн</div></div>
+            <div class="month-selector"><button class="month-btn" onclick="prevMonth()">←</button><span id="currentMonthName2">Ноябрь 2025</span><button class="month-btn" onclick="nextMonth()">→</button></div>
+            <input type="text" id="searchInput" class="search-input" placeholder="Поиск...">
+            <div class="filter-tabs"><button class="filter-tab active" onclick="filterByCategory('all')">Все</button><div id="categoryFilters"></div></div>
+            <select id="sortSelect" class="sort-select" onchange="renderExpensesList()">
+                <option value="date-desc">По дате (свежие)</option>
+                <option value="date-asc">По дате (старые)</option>
+                <option value="amount-desc">По сумме (больше)</option>
+                <option value="amount-asc">По сумме (меньше)</option>
+            </select>
+            <div id="expensesList"></div>
+            <button class="fab" onclick="openAddModal('expense')">➕ Расход</button>
+        </div>
+
+        <!-- ПЛАН -->
+        <div id="screen-plan" class="screen">
+            <div class="header"><h1>💰 План</h1><div id="syncStatus3" class="sync-status">✅ Онлайн</div></div>
+            <div class="month-selector"><button class="month-btn" onclick="prevMonth()">←</button><span id="currentMonthName3">Ноябрь 2025</span><button class="month-btn" onclick="nextMonth()">→</button></div>
+            <div id="budgetList"></div>
+        </div>
+
+        <!-- НАСТРОЙКИ -->
+        <div id="screen-settings" class="screen">
+            <div class="header"><h1>⚙️ Настройки</h1></div>
+            <div class="settings-section">
+                <h3>Профили</h3>
+                <div class="profile-item"><span>👨 Семён</span><span>✔️</span></div>
+                <div class="profile-item"><span>👩 Татьяна</span><span>✔️</span></div>
+            </div>
+            <div class="settings-section">
+                <h3>Синхронизация</h3>
+                <div id="syncStatusText">Статус: ✅ Онлайн</div>
+                <div id="lastSyncTime">Последняя синхр: никогда</div>
+                <button class="btn-primary" onclick="manualSync()">🔄 Синхронизировать</button>
+            </div>
+            <div class="settings-section">
+                <h3>О приложении</h3>
+                <div>Версия: 2.1</div>
+                <div>Дата: 31 октября 2025</div>
+                <button class="btn-danger" onclick="clearCache()">🗑️ Очистить кеш</button>
+            </div>
+        </div>
+
+        <!-- BOTTOM NAV -->
+        <div class="bottom-nav">
+            <button class="nav-btn active" onclick="switchScreen('home')">🏠</button>
+            <button class="nav-btn" onclick="switchScreen('expenses')">📊</button>
+            <button class="nav-btn" onclick="switchScreen('plan')">💰</button>
+            <button class="nav-btn" onclick="switchScreen('settings')">⚙️</button>
+        </div>
+    </div>
+
+    <!-- МОДАЛИ -->
+    <div id="modalOverlay" class="modal-overlay">
+        <div id="transactionModal" class="modal">
+            <h2 id="modalTitle">Добавить расход</h2>
+            <input type="text" id="txName" placeholder="Описание">
+            <input type="number" id="txAmount" placeholder="Сумма" min="0">
+            <select id="txCategory"></select>
+            <input type="date" id="txDate">
+            <button class="btn-danger" id="txDeleteBtn" style="display:none;" onclick="deleteTransaction()">🗑️ Удалить</button>
+            <button class="btn-secondary" onclick="closeModal()">Отменить</button>
+            <button class="btn-primary" onclick="saveTransaction()">✅ Сохранить</button>
+        </div>
+
+        <div id="incomeModal" class="modal">
+            <h2>Добавить доход</h2>
+            <input type="text" id="incName" placeholder="Описание">
+            <input type="number" id="incAmount" placeholder="Сумма" min="0">
+            <input type="date" id="incDate">
+            <button class="btn-secondary" onclick="closeModal()">Отменить</button>
+            <button class="btn-primary" onclick="saveIncome()">✅ Сохранить</button>
+        </div>
+
+        <div id="limitModal" class="modal">
+            <h2>Редактировать лимит</h2>
+            <label id="limitCategoryLabel"></label>
+            <input type="number" id="limitAmount" placeholder="0" min="0">
+            <button class="btn-secondary" onclick="closeModal()">Отменить</button>
+            <button class="btn-primary" onclick="saveLimit()">✅ Сохранить</button>
+        </div>
+
+        <div id="monthModal" class="modal">
+            <h2>Добавить месяц</h2>
+            <select id="monthSelect"></select>
+            <button class="btn-secondary" onclick="closeModal()">Отменить</button>
+            <button class="btn-primary" onclick="addNewMonth()">✅ Добавить</button>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/sheets-sync.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
